@@ -1,81 +1,61 @@
-import React, { useContext, useRef } from 'react';
+import React, { useEffect, useRef} from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
 
-import TransitionContext from '../context/TransitionContext';
+export default function App() {
+    const trigger1 = useRef();
+    const trigger2 = useRef();
+    const rootDiv = useRef();
+    const timeline1 = useRef();
+    const timeline2 = useRef();
 
-export default function Layers() {
-    const main = useRef();
-    const { completed } = useContext(TransitionContext);
-    const scrollTween = useRef();
-    const snapTriggers = useRef([]);
-    const { contextSafe } = useGSAP(
-        () => {
-            if (!completed) return;
-            let panels = gsap.utils.toArray('.panel'),
-                scrollStarts = [0],
-                snapScroll = value => value; // for converting a pixel-based scroll value to the closest panel scroll position
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            const tl1 = (timeline1.current = gsap.timeline());
+            const tl2 = (timeline2.current = gsap.timeline());
 
-            // create a ScrollTrigger for each panel that's only concerned about figuring out when its top hits the top of the viewport. We'll use the "start" of that ScrollTrigger to figure out snapping positions.
-            panels.forEach((panel, i) => {
-                snapTriggers.current[i] = ScrollTrigger.create({
-                    trigger: panel,
-                    start: "top top"
-                });
+            tl1.to(".animDiv1", { scale: 1 });
+            tl2.to(".animDiv2", { scale: 1 });
+
+            ScrollTrigger.create({
+                trigger: trigger1.current,
+                animation: tl1,
+                start: () => "top top",
+                end: () => `+=${trigger1.current.offsetHeight * 0.5}`,
+                scrub: true,
             });
 
-            // once all the triggers have calculated their start/end, create the snap function that'll accept an overall progress value for the overall page, and then return the closest panel snapping spot based on the direction of scroll
-            ScrollTrigger.addEventListener("refresh", () => {
-                scrollStarts = snapTriggers.current.map(trigger => trigger.start); // build an Array with just the starting positions where each panel hits the top of the viewport
-                snapScroll = ScrollTrigger.snapDirectional(scrollStarts); // get a function that we can feed a pixel-based scroll value to and a direction, and then it'll spit back the closest snap position (in pixels)
+            ScrollTrigger.create({
+                trigger: trigger2.current,
+                animation: tl2,
+                start: () => "top top",
+                end: () => `+=${trigger2.current.offsetHeight * 0.5}`,
+                scrub: true,
             });
 
-            ScrollTrigger.observe({
-                type: "wheel,touch",
-                onChangeY(self) {
-                    if (!scrollTween.current) {
-                        // find the closest snapping spot based on the direction of scroll
-                        let scroll = snapScroll(self.scrollY() + self.deltaY, self.deltaY > 0 ? 1 : -1);
-                        goToSection(scrollStarts.indexOf(scroll)); // scroll to the index of the associated panel
-                    }
-                }
-            })
+            return () => ScrollTrigger.killAll();
+        }, rootDiv);
 
-            ScrollTrigger.refresh();
-        },
-        {
-            dependencies: [completed],
-            scope: main,
-            revertOnUpdate: true,
-        }
-    );
-
-    const goToSection = contextSafe((i) => {
-        console.log("scroll to", i);
-        scrollTween.current = gsap.to(window, {
-            scrollTo: { y: snapTriggers.current[i].start, autoKill: false },
-            duration: 1,
-            onComplete: () => (scrollTween.current = null),
-            overwrite: true
-        });
+        return () => ctx.revert();
     });
 
     return (
-        <main ref={main}>
-            <section className="description panel light">
-                <div>
-                    <h1>Layered pinning</h1>
-                    <p>Use pinning to layer panels on top of each other as you scroll.</p>
-                    <div className="scroll-down">
-                        Scroll down<div className="arrow"></div>
-                    </div>
-                </div>
-            </section>
-            <section className="panel dark">ONE</section>
-            <section className="panel purple">TWO</section>
-            <section className="panel orange">THREE</section>
-            <section className="panel red">FOUR</section>
-        </main>
+        <div ref={rootDiv}>
+            <div className=" triggers relative z-50 w-fit mx-auto">
+                <div
+                    ref={trigger1}
+                    className=" text-blue-400 font-bold w-10 h-[200vh] bg-[#FFC000] "
+                ></div>
+                <div
+                    ref={trigger2}
+                    className=" text-blue-400 font-bold w-10 h-[200vh] bg-green-500 "
+                ></div>
+            </div>
+
+            <div className="relative">
+                <div className="animDiv1 fixed top-0 z-10 w-screen h-screen bg-blue-500 scale-[30%]"></div>
+                <div className="animDiv2 fixed top-0 z-20 w-screen h-screen bg-red-500 scale-0"></div>
+            </div>
+        </div>
     );
 }
