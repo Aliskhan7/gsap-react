@@ -1,60 +1,86 @@
-import React, { useEffect, useRef} from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import "./index.css";
+import { useEffect, useState, useRef } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import imagesLoaded from "imagesloaded";
+
 
 export default function App() {
-    const trigger1 = useRef();
-    const trigger2 = useRef();
-    const rootDiv = useRef();
-    const timeline1 = useRef();
-    const timeline2 = useRef();
-
+    const [index] = useState([1, 2, 3, 4]);
+    const [imgIndex] = useState([1, 2, 3, 4, 5]);
+    const appRef = useRef();
     useEffect(() => {
-        const ctx = gsap.context(() => {
-            const tl1 = (timeline1.current = gsap.timeline());
-            const tl2 = (timeline2.current = gsap.timeline());
+        gsap.registerPlugin(ScrollTrigger);
+        const images = gsap.utils.toArray("img");
+        const showDemo = () => {
+            document.body.style.overflow = "auto";
 
-            tl1.to(".animDiv1", { scale: 1 });
-            tl2.to(".animDiv2", { scale: 1 });
+            document.scrollingElement.scrollTo(0, 0);
 
-            ScrollTrigger.create({
-                trigger: trigger1.current,
-                animation: tl1,
-                start: () => "top top",
-                end: () => `+=${trigger1.current.offsetHeight * 0.5}`,
-                scrub: true,
+            gsap.utils.toArray("section").forEach((section, index) => {
+                const w = section.querySelector(".wrapper");
+                const [x, xEnd] =
+                    index % 2
+                        ? ["100%", (w.scrollWidth - section.offsetWidth) * -1]
+                        : [w.scrollWidth * -1, 0];
+                gsap.fromTo(
+                    w,
+                    { x },
+                    {
+                        x: xEnd,
+                        scrollTrigger: {
+                            trigger: section,
+                            scrub: 0.5
+                        }
+                    }
+                );
             });
+        };
 
-            ScrollTrigger.create({
-                trigger: trigger2.current,
-                animation: tl2,
-                start: () => "top top",
-                end: () => `+=${trigger2.current.offsetHeight * 0.5}`,
-                scrub: true,
-            });
-
-            return () => ScrollTrigger.killAll();
-        }, rootDiv);
-
-        return () => ctx.revert();
-    });
-
+        imagesLoaded(images).on("always", showDemo);
+    }, []);
     return (
-        <div ref={rootDiv}>
-            <div className=" triggers relative z-50 w-fit mx-auto">
-                <div
-                    ref={trigger1}
-                    className=" text-blue-400 font-bold w-10 h-[200vh] bg-[#FFC000] "
-                ></div>
-                <div
-                    ref={trigger2}
-                    className=" text-blue-400 font-bold w-10 h-[200vh] bg-green-500 "
-                ></div>
-            </div>
+        <div ref={appRef} className="App">
+            <div className="loader df aic jcc"></div>
+            <div className="demo-wrapper">
+                <header className="df aic jcc">
+                    <div>
+                        <h1>ScrollTrigger</h1>
+                        <h2>demo</h2>
+                    </div>
+                </header>
+                <section className="demo-text">
+                    <div className="wrapper text">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+                </section>
 
-            <div className="relative">
-                <div className="animDiv1 fixed top-0 z-10 w-screen h-screen bg-blue-500 scale-[30%]"></div>
-                <div className="animDiv2 fixed top-0 z-20 w-screen h-screen bg-red-500 scale-0"></div>
+                {index.map((id) => {
+                    return (
+                        <section key={id} className="demo-gallery">
+                            <ul className="wrapper">
+                                {imgIndex.map((id) => {
+                                    return (
+                                        <li key={id}>
+                                            <img
+                                                height="800"
+                                                src="https://source.unsplash.com/random"
+                                                alt=""
+                                            />
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </section>
+                    );
+                })}
+
+                <section className="demo-text">
+                    <div className="wrapper text">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+                </section>
+                <footer className="df aic jcc">
+                    <p>
+                        Images from <a href="https://unsplash.com/">Unsplash</a>
+                    </p>
+                </footer>
             </div>
         </div>
     );
